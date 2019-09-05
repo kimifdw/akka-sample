@@ -64,6 +64,78 @@ public class MyActor extends AbstractActor {
     }
 }
 
+/**
+ * stash or unstash
+ */
+class ActorWithProtocol extends AbstractActorWithStash {
+    @Override
+    public Receive createReceive() {
+        return receiveBuilder()
+                .matchEquals("open", s -> {
+                    getContext()
+                            .become(receiveBuilder().matchEquals("write", ws -> {
+
+                                    })
+                                            .matchEquals("close", cs -> {
+                                                unstashAll();
+                                                getContext().unbecome();
+                                            })
+                                            .matchAny(msg -> stash()).build(), false
+                            );
+                })
+                .matchAny(msg -> stash())
+                .build();
+    }
+}
+
+/**
+ * become：热更新actor;unbecome：非热更新
+ */
+class Swapper extends AbstractLoggingActor {
+
+    @Override
+    public Receive createReceive() {
+        return receiveBuilder()
+                .matchEquals("hi", s -> {
+                    log().info("hi");
+                    getContext().become(receiveBuilder().matchEquals("hi", x -> {
+                        log().info("Ho");
+                        getContext().unbecome();
+                    }).build(), false);
+                }).build();
+    }
+}
+
+class HotSwapActor extends AbstractActor {
+
+    private AbstractActor.Receive angry;
+    private AbstractActor.Receive happy;
+
+    public HotSwapActor() {
+        angry = receiveBuilder()
+                .matchEquals("foo", s -> {
+                    getSender().tell("I am already angry?", getSelf());
+                })
+                .matchEquals("bar", s -> {
+                    getSender().tell("I am already happy:-)", getSelf());
+                })
+                .matchEquals("foo", s -> {
+                    getContext().become(angry);
+                })
+                .build();
+    }
+
+    @Override
+    public Receive createReceive() {
+        return receiveBuilder().matchEquals("foo", s -> getContext().become(angry))
+                .matchEquals("bar", s -> getContext().become(happy))
+                .build();
+    }
+}
+
+/**
+ * 定时执行
+ */
 class TimerActor extends AbstractActorWithTimers {
 
     private static Object TICK_KEY = "TickKey";
