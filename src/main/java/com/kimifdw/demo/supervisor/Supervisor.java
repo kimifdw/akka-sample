@@ -21,36 +21,42 @@ import java.time.Duration;
  */
 public class Supervisor extends AbstractActor {
 
-    private static SupervisorStrategy strategy = new OneForOneStrategy(10,
-            Duration.ofMinutes(1),
-            DeciderBuilder.match(ArithmeticException.class, e -> SupervisorStrategy.resume())
-                    .match(NullPointerException.class, e -> SupervisorStrategy.restart())
-                    .match(IllegalArgumentException.class, e -> SupervisorStrategy.stop())
-                    .matchAny(o -> SupervisorStrategy.escalate())
-                    .build()
-    );
+  private static SupervisorStrategy strategy = new OneForOneStrategy(10,
+    Duration.ofMinutes(1),
+    DeciderBuilder.match(ArithmeticException.class, e -> SupervisorStrategy.resume())
+      .match(NullPointerException.class, e -> SupervisorStrategy.restart())
+      .match(IllegalArgumentException.class, e -> SupervisorStrategy.stop())
+      .matchAny(o -> SupervisorStrategy.escalate())
+      .build()
+  );
 
-    @Override
-    public SupervisorStrategy supervisorStrategy() {
-        return strategy;
-    }
+  @Override
+  public SupervisorStrategy supervisorStrategy() {
+    return strategy;
+  }
 
-    @Override
-    public Receive createReceive() {
-        return receiveBuilder()
-                .match(Props.class,
-                        props -> {
-                            getSender().tell(getContext().actorOf(props), getSelf());
-                        }).build();
-    }
+  @Override
+  public Receive createReceive() {
+    return receiveBuilder()
+      .match(Props.class,
+        props -> {
+          getSender().tell(getContext().actorOf(props), getSelf());
+        }).build();
+  }
 }
 
 class Child extends AbstractActor {
 
-    int state = 0;
+  int state = 0;
 
-    @Override
-    public Receive createReceive() {
-        return null;
-    }
+  @Override
+  public Receive createReceive() {
+    return receiveBuilder()
+      .match(Exception.class, exception -> {
+        throw exception;
+      })
+      .match(Integer.class, i -> state = i)
+      .matchEquals("get", s -> getSender().tell(state, getSelf()))
+      .build();
+  }
 }
