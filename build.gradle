@@ -24,6 +24,7 @@ dependencies {
     // This dependency is used by the application.
     implementation 'com.google.guava:guava:28.0-jre'
     compile 'com.typesafe.akka:akka-actor_2.12:2.5.25'
+    compile 'com.typesafe.akka:akka-persistence_2.12:2.5.25'
     testCompile 'com.typesafe.akka:akka-testkit_2.12:2.5.25'
 
     // Use JUnit test framework
